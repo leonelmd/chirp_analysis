@@ -17,13 +17,42 @@ filter = Dict(
 resampling_rate = 250 # Hz
 
 datasets = [
-	#=
+	# WT 6m male
+	"MR-0282",
+	"MR-0276",
+	"MR-0273",
+	"MR-0270",
+	# WT 6m female
+	"MR-0294",
+	"MR-0289",
+	"MR-0288-t2",
+	"MR-0288-t1",
+	"MR-0284",
+	"MR-0283-t2",
+	# WT 3m male
+	"MR-0474",
+	"MR-0311",
+	"MR-0309",
+	"MR-0306",
+	"MR-0299-t2",
+	"MR-0299-t1",
+	"MR-0298-t2",
+	"MR-0298-t1",
+	"MR-0296-t2",
+	"MR-0296-t1",
+	# WT 3m female
+	"MR-0491",
+	"MR-0303",
+	"MR-0300-t2",
+	"MR-0300-t1",
 	# XBP1s 6m male
 	"MR-0599_nd4",
 	"MR-0597_nd4",
 	"MR-0596_nd4",
 	"MR-0569_nd4",
 	"MR-0554",
+	"MR-0465-t2",
+	"MR-0465-t1",
 	# XBP1s 6m female
 	"MR-0625_nd4",
 	"MR-0624_nd4",
@@ -32,6 +61,10 @@ datasets = [
 	# XBP1s 3m male
 	"MR-0592_nd4",
 	"MR-0591_nd4",
+	"MR-0483",
+	"MR-0460",
+	"MR-0456",
+	#=
 	# XBP1s 3m female
 	"MR-0621_nd4",
 	"MR-0620_nd4",
@@ -57,34 +90,6 @@ datasets = [
 	"MR-0579_nd4",
 	"MR-0585_nd4",
 	"MR-0586_nd4",
-	# WT 6m male
-	=#
-	"MR-0282",
-	#=
-	"MR-0276",
-	"MR-0273",
-	"MR-0270",
-	# WT 6m female
-	"MR-0289",
-	"MR-0288-t2",
-	"MR-0288-t1",
-	"MR-0284",
-	"MR-0283-t2",
-	"MR-0283-t1",
-	# WT 3m male
-	"MR-0311",
-	"MR-0309",
-	"MR-0306",
-	"MR-0299-t2",
-	"MR-0299-t1",
-	"MR-0298-t2",
-	"MR-0298-t1",
-	"MR-0296-t2",
-	"MR-0296-t1",
-	# WT 3m female
-	"MR-0303",
-	"MR-0300-t2",
-	"MR-0300-t1",
 	# 5xFAD 6m male
 	"MR-0293",
 	"MR-0292-t2",

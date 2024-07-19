@@ -70,7 +70,7 @@ function normalize_signals(dataset)
 				u = mean(signal)
 				s = std(signal)
 				normalized_signal = (signal .- u) ./ s
-				processed_file["electrode_"*string(i-1)*"/event_"*string(j-1)*"/normalized/data"] = normalized_signal
+				processed_file["electrode_"*string(i-1)*"/event_"*string(j-1)*"/normalized"] = normalized_signal
 			end
 		end
 	end
@@ -78,7 +78,7 @@ function normalize_signals(dataset)
 	println("Done.")
 end
 
-function get_mean_signals(dataset, time, filter="none", snr=5)
+function get_mean_signals(dataset, time, filter="none", threshold=3) # threshold for SNR = 3 dB
 	# get electrode mean
 	h5open("./processed_data/"*dataset*"_chirp_processed.h5", "cw") do processed_file
 		# check
@@ -99,7 +99,7 @@ function get_mean_signals(dataset, time, filter="none", snr=5)
 				mean_signal = mean_signal ./ 252
 			else filter == "snr"
 				# add SNR filter based on SNR h5 file
-				snr_file = h5open("./preprocessed_data/"*dataset*"_chirp_snr.h5", "r")
+				snr_file = h5open("../SNR/"*dataset*"_SNR.h5", "r")
 			end
 
 			processed_file["electrode_mean/event_"*string(j-1)*"/data"] = mean_signal
