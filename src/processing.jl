@@ -70,7 +70,7 @@ function normalize_signals(dataset)
 				u = mean(signal)
 				s = std(signal)
 				normalized_signal = (signal .- u) ./ s
-				processed_file["electrode_"*string(i-1)*"/event_"*string(j-1)*"/normalized"] = normalized_signal
+				processed_file["electrode_"*string(i-1)*"/event_"*string(j-1)*"/normalized/data"] = normalized_signal
 			end
 		end
 	end
@@ -78,72 +78,121 @@ function normalize_signals(dataset)
 	println("Done.")
 end
 
-function get_mean_signals(dataset, time, filter="none", threshold=3) # threshold for SNR = 3 dB
+function get_event_mean(dataset, time)
+	# open processed file
+	h5open("./processed_data/"*dataset*"_chirp_processed.h5", "cw") do processed_file
+		# check
+		if group_check(processed_file, ["electrode_0", "event_mean"])
+			println("Skipping getting event mean...")
+			return
+		end
+
+		println("Getting event mean.. ")
+
+		# get event mean per electrode
+		for i in 1:252
+			event_mean = zeros(resampling_rate*time)
+			for j in 2:11
+				event_mean += read(processed_file, "electrode_"*string(i-1)*"/event_"*string(j-1)*"/normalized/data")
+			end
+			event_mean = event_mean ./ 10
+			processed_file["electrode_"*string(i-1)*"/event_mean/data"] = event_mean
+		end
+	end
+
+	println("Done.")
+end
+
+function get_electrode_mean(dataset, time, electrode_filter="none") #filters: none, snr_n
 	# get electrode mean
 	h5open("./processed_data/"*dataset*"_chirp_processed.h5", "cw") do processed_file
 		# check
-		if group_check(processed_file, ["electrode_mean"])
+		if group_check(processed_file, ["electrode_mean", electrode_filter])
 			println("Skipping getting electrode mean...")
 			return
 		end
 
 		println("Getting electrode mean... ")
 
-		for j in 2:11
-			mean_signal = zeros(resampling_rate*time)
+		mean_signal = zeros(resampling_rate*time)
+		if electrode_filter == "none"
+			for i in 1:252
+				mean_signal += read(processed_file, "electrode_"*string(i-1)*"/event_mean/data")
+			end
+			mean_signal = mean_signal ./ 252
+			processed_file["electrode_mean/none/data"] = mean_signal
+		else
+			threshold = parse(Float64, electrode_filter[5:end])
+			# add SNR filter based on SNR h5 file
+			snr_file = h5open("../SNR/"*dataset*"_SNR.h5", "r")
 
-			if filter == "none"
-				for i in 1:252
-					mean_signal += read(processed_file, "electrode_"*string(i-1)*"/event_"*string(j-1)*"/normalized/data")
+			filtered_electrodes = []
+
+			for i in 1:252
+				if read(snr_file, "electrode_"*string(i-1)*"/SNR") >= threshold
+					push!(filtered_electrodes, "electrode_"*string(i-1))
+					mean_signal += read(processed_file, "electrode_"*string(i-1)*"/event_mean/data")
 				end
-				mean_signal = mean_signal ./ 252
-			else filter == "snr"
-				# add SNR filter based on SNR h5 file
-				snr_file = h5open("../SNR/"*dataset*"_SNR.h5", "r")
 			end
 
-			processed_file["electrode_mean/event_"*string(j-1)*"/data"] = mean_signal
+			mean_signal = mean_signal ./ length(filtered_electrodes)
+			processed_file["electrode_mean/"*electrode_filter*"/data"] = mean_signal
+			processed_file["electrode_mean/"*electrode_filter*"/meta/filtered_electrodes"] = filtered_electrodes
 		end
-	end
-
-	# get event mean
-	h5open("./processed_data/"*dataset*"_chirp_processed.h5", "cw") do processed_file
-		# check
-		if group_check(processed_file, ["electrode_mean", "event_mean"])
-			println("Skipping getting event mean...")
-			return
-		end
-
-		println("Getting event mean... ")
-
-		mean_signal = zeros(resampling_rate*time)
-		for j in 2:11
-			mean_signal += read(processed_file, "electrode_mean/event_"*string(j-1)*"/data")
-		end
-		mean_signal = mean_signal ./ 10
-		processed_file["electrode_mean/event_mean/data"] = mean_signal
 	end
 
 	println("Done.")
 end
 
-function compute_entropy_curve(dataset, type, m, r, scales)
-	# open entropy file
+function compute_entropy_curve(dataset, e_f, type, m, r, scales)
+
 	h5open("./entropy_data/"*dataset*"_chirp_entropy.h5", "cw") do entropy_file
 		# check
-		if group_check(entropy_file, [type, string(r), "electrode_mean"])
-			println("Skipping computing "*type*" curve with r = "*string(r)*"...")
+		if group_check(entropy_file, [type, string(r), "electrode_0", "event_1"])
+			println("Skipping computing "*type*" curve with r = "*string(r)*" for all events, for all electrodes...")
 			return
 		end
 
-		println("Computing "*type*" curve with r = "*string(r)*"...")
+		println("Computing "*type*" curve with r = "*string(r)*" for all events, for all electrodes...")
 
 		h5open("./processed_data/"*dataset*"_chirp_processed.h5", "r") do processed_file
 
-			println("Processing electrode mean...")
-			for j in 2:11
-				# get mean signal
-				signal = read(processed_file, "electrode_mean/event_"*string(j-1)*"/data")
+			# compute entropy curve for all events, for all electrodes
+			for i in 0:251
+				for j in 1:10
+					signal = read(processed_file, "electrode_"*string(i)*"/event_"*string(j)*"/normalized/data")
+					# compute entropy curve
+					if type == "MSE"
+						entropy_curve = multiscale_entropy(signal, m, r*std(signal), "sample", scales)
+					elseif type == "RCMSE"
+						entropy_curve = refined_composite_multiscale_entropy(signal, m, r*std(signal), "sample", scales)
+					elseif type == "FMSE"
+						entropy_curve = multiscale_entropy(signal, m, r*std(signal), "fuzzy", scales)
+					elseif type == "FRCMSE"
+						entropy_curve = refined_composite_multiscale_entropy(signal, m, r*std(signal), "fuzzy", scales)
+					end
+					entropy_file[type*"/"*string(r)*"/electrode_"*string(i)*"/event_"*string(j)*"/curve"] = entropy_curve
+					entropy_file[type*"/"*string(r)*"/electrode_"*string(i)*"/event_"*string(j)*"/nAUC"] = compute_nAUC(entropy_curve)
+					entropy_file[type*"/"*string(r)*"/electrode_"*string(i)*"/event_"*string(j)*"/LRS"] = compute_LRS(entropy_curve, scales)
+				end
+			end
+		end
+	end
+
+	h5open("./entropy_data/"*dataset*"_chirp_entropy.h5", "cw") do entropy_file
+		# check
+		if group_check(entropy_file, [type, string(r), "electrode_0", "event_mean"])
+			println("Skipping computing "*type*" curve with r = "*string(r)*" for all event means...")
+			return
+		end
+
+		println("Computing "*type*" curve with r = "*string(r)*" for all event means...")
+
+		h5open("./processed_data/"*dataset*"_chirp_processed.h5", "r") do processed_file
+
+			# compute entropy curve for all events, for all electrodes
+			for i in 0:251
+				signal = read(processed_file, "electrode_"*string(i)*"/event_mean/data")
 				# compute entropy curve
 				if type == "MSE"
 					entropy_curve = multiscale_entropy(signal, m, r*std(signal), "sample", scales)
@@ -154,14 +203,26 @@ function compute_entropy_curve(dataset, type, m, r, scales)
 				elseif type == "FRCMSE"
 					entropy_curve = refined_composite_multiscale_entropy(signal, m, r*std(signal), "fuzzy", scales)
 				end
-				entropy_file[type*"/"*string(r)*"/electrode_mean/event_"*string(j-1)*"/curve"] = entropy_curve
-				entropy_file[type*"/"*string(r)*"/electrode_mean/event_"*string(j-1)*"/nAUC"] = compute_nAUC(entropy_curve)
-				entropy_file[type*"/"*string(r)*"/electrode_mean/event_"*string(j-1)*"/LRS"] = compute_LRS(entropy_curve, scales)
+				entropy_file[type*"/"*string(r)*"/electrode_"*string(i)*"/event_mean/curve"] = entropy_curve
+				entropy_file[type*"/"*string(r)*"/electrode_"*string(i)*"/event_mean/nAUC"] = compute_nAUC(entropy_curve)
+				entropy_file[type*"/"*string(r)*"/electrode_"*string(i)*"/event_mean/LRS"] = compute_LRS(entropy_curve, scales)
 			end
+		end
+	end
 
-			println("Processing event mean...")
-			# get mean signal
-			signal = read(processed_file, "electrode_mean/event_mean/data")
+	h5open("./entropy_data/"*dataset*"_chirp_entropy.h5", "cw") do entropy_file
+		# check
+		if group_check(entropy_file, [type, string(r), "electrode_mean", e_f])
+			println("Skipping computing "*type*" curve with r = "*string(r)*" for electrode mean with electrode filter = "*e_f*"...")
+			return
+		end
+
+		println("Computing "*type*" curve with r = "*string(r)*" for electrode mean with electrode filter = "*e_f*"...")
+
+		h5open("./processed_data/"*dataset*"_chirp_processed.h5", "r") do processed_file
+
+			# compute entropy curve for all events, for all electrodes
+			signal = read(processed_file, "electrode_mean/"*e_f*"/data")
 			# compute entropy curve
 			if type == "MSE"
 				entropy_curve = multiscale_entropy(signal, m, r*std(signal), "sample", scales)
@@ -172,9 +233,9 @@ function compute_entropy_curve(dataset, type, m, r, scales)
 			elseif type == "FRCMSE"
 				entropy_curve = refined_composite_multiscale_entropy(signal, m, r*std(signal), "fuzzy", scales)
 			end
-			entropy_file[type*"/"*string(r)*"/electrode_mean/event_mean/curve"] = entropy_curve
-			entropy_file[type*"/"*string(r)*"/electrode_mean/event_mean/nAUC"] = compute_nAUC(entropy_curve)
-			entropy_file[type*"/"*string(r)*"/electrode_mean/event_mean/LRS"] = compute_LRS(entropy_curve, scales)
+			entropy_file[type*"/"*string(r)*"/electrode_mean/"*e_f*"/curve"] = entropy_curve
+			entropy_file[type*"/"*string(r)*"/electrode_mean/"*e_f*"/nAUC"] = compute_nAUC(entropy_curve)
+			entropy_file[type*"/"*string(r)*"/electrode_mean/"*e_f*"/LRS"] = compute_LRS(entropy_curve, scales)
 		end
 	end
 
