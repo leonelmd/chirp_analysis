@@ -26,16 +26,18 @@ group_labels_plot = ["WT young" "WT adult" "5xFAD young" "5xFAD adult" "XBP1s yo
 grouped_datasets = Dict()
 grouped_datasets["A"] = [
 	# WT 3m male
+	"MR-0474",
 	"MR-0311",
 	"MR-0309",
 	"MR-0306",
-	"MR-0299-t2",
+	## "MR-0299-t2",
 	"MR-0299-t1",
 	"MR-0298-t2",
 	"MR-0298-t1",
 	"MR-0296-t2",
 	"MR-0296-t1",
 	# WT 3m female
+	"MR-0491",
 	"MR-0303",
 	"MR-0300-t2",
 	"MR-0300-t1",
@@ -47,12 +49,12 @@ grouped_datasets["B"] = [
 	"MR-0273",
 	"MR-0270",
 	# WT 6m female
+	"MR-0294",
 	"MR-0289",
 	"MR-0288-t2",
 	"MR-0288-t1",
 	"MR-0284",
 	"MR-0283-t2",
-	"MR-0283-t1",
 ]
 grouped_datasets["C"] = [
 	# 5xFAD 3m male
@@ -62,17 +64,20 @@ grouped_datasets["C"] = [
 	"MR-0313",
 	"MR-0312",
 	"MR-0307-t2",
-	"MR-0307-t1",
+	#"MR-0307-t1",
 	"MR-0304-t2",
-	"MR-0304-t1",
+	#"MR-0304-t1",
 	"MR-0302-t2",
 	"MR-0302-t1",
 	"MR-0301-t2",
 	"MR-0301-t1",
-	"MR-0297",
+	##"MR-0297",
 ]
 grouped_datasets["D"] = [
 	# 5xFAD 6m male
+	"MR-0448",
+	"MR-0447",
+	#"MR-0446",
 	"MR-0293",
 	"MR-0292-t2",
 	"MR-0292-t1",
@@ -92,18 +97,24 @@ grouped_datasets["E"] = [
 	# XBP1s 3m male
 	"MR-0592_nd4",
 	"MR-0591_nd4",
+	"MR-0483",
+	"MR-0460",
+	"MR-0456",
 	# XBP1s 3m female
 	"MR-0621_nd4",
 	"MR-0620_nd4",
 	"MR-0593_nd4",
+	"MR-0573_nd4",
 ]
 grouped_datasets["F"] = [
 	# XBP1s 6m male
 	"MR-0599_nd4",
 	"MR-0597_nd4",
 	"MR-0596_nd4",
-	"MR-0569_nd4",
+	#"MR-0569_nd4",
 	"MR-0554",
+	"MR-0465-t2",
+	"MR-0465-t1",
 	# XBP1s 6m female
 	"MR-0625_nd4",
 	"MR-0624_nd4",
@@ -127,10 +138,10 @@ grouped_datasets["H"] = [
 	"MR-0629-t1_nd4",
 	"MR-0552",
 	# Double 6m female
+	"MR-0530",
 	"MR-0548-t1",
 	"MR-0548-t2",
-	"MR-0568-t1_nd4",
-	"MR-0568-t2_nd4",
+	"MR-0568_nd4",
 	"MR-0582_nd4",
 	"MR-0587_nd4",
 	"MR-0588_nd4",
@@ -164,7 +175,7 @@ v_ls_index["G"] = :dash
 v_ls_index["H"] = :dashdot
 
 t_list = ["RCMSE"]
-r_list = ["0.2", "0.3", "0.4", "0.5"]
+r_list = ["0.2"]
 
 # load entropy data
 entropy_data = Dict()
@@ -184,7 +195,7 @@ for dataset in datasets
 
 	for type in t_list
 		for r in r_list
-			entropy = read(file["/$(type)/$(r)/electrode_mean/event_mean"])
+			entropy = read(file["/$(type)/$(r)/electrode_mean"])
 			entropy_data[dataset][type][r]["curve"] = entropy["curve"]
 			entropy_data[dataset][type][r]["LRS"] = entropy["LRS"]
 			entropy_data[dataset][type][r]["nAUC"] = entropy["nAUC"]
@@ -197,6 +208,22 @@ end
 # plots
 if !isdir("./plots")
 	mkdir("./plots")
+end
+
+if !isdir("./plots/signals")
+	mkdir("./plots/signals")
+end
+
+for dataset in datasets
+	file = h5open("./processed_data/$(dataset)_chirp_processed.h5", "r")
+
+	s = read(file, "electrode_mean/data")
+
+	plot(size=(800, 600))
+	plot!(xlabel="Ticks", ylabel="Amplitude")
+	plot!(title=" $(dataset) electrode mean")
+	plot!(s)
+	savefig("./plots/signals/$(dataset)_electrode_mean.png")
 end
 
 for type in t_list
@@ -223,7 +250,7 @@ for type in t_list
 		end
 
 		# average entropy curves of all groups
-		plot(xlims=(1, 45), ylims=(0, 2.25), size=(800, 600), legend=:topright)
+		plot(xlims=(1, 45), ylims=(0, 0.7), size=(800, 600), legend=:topright)
 		plot!(xlabel="Scale", ylabel="Sample Entropy")
 		plot!(title=" $(type) $(r)")
 		for g in groups
@@ -246,7 +273,7 @@ for type in t_list
 				push!(grouped_lrs[g], entropy_data[d][type][r]["LRS"])
 			end
 		end
-		plot(ylims=(-0.01, 0.05), size=(800, 600), legend=:none)
+		plot(ylims=(-0.02, 0.01), size=(800, 600), legend=:none)
 		a_data = [grouped_lrs[g] for g in groups]
 
 		violin!(group_labels_plot, a_data, label=group_labels_plot, color = v_color, fill = v_fill, ls=v_ls)
@@ -265,7 +292,7 @@ for type in t_list
 				push!(grouped_nauc[g], entropy_data[d][type][r]["nAUC"])
 			end
 		end
-		plot(ylims=(0, 2.0), size=(800, 600), legend=:none)
+		plot(ylims=(0, 1.0), size=(800, 600), legend=:none)
 		a_data = [grouped_nauc[g] for g in groups]
 
 		violin!(group_labels_plot, a_data, label=group_labels_plot, color = v_color, fill = v_fill, ls=v_ls)

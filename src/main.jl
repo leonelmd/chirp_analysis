@@ -2,8 +2,6 @@
 # @author: max (max@mdotmonar.ch)
 
 using HDF5
-using Plots
-using StatsPlots
 
 include("preprocessing.jl")
 include("processing.jl")
@@ -92,10 +90,10 @@ datasets = [
 	"MR-0629-t1_nd4",
 	"MR-0552",
 	# Double 6m female
+	"MR-0530",
 	"MR-0548-t1",
 	"MR-0548-t2",
-	"MR-0568-t1_nd4",
-	"MR-0568-t2_nd4",
+	"MR-0568_nd4",
 	"MR-0582_nd4",
 	"MR-0587_nd4",
 	"MR-0588_nd4",
@@ -108,6 +106,9 @@ datasets = [
 	"MR-0585_nd4",
 	"MR-0586_nd4",
 	# 5xFAD 6m male
+	"MR-0448",
+	"MR-0447",
+	"MR-0446",
 	"MR-0448",
 	"MR-0447",
 	"MR-0446",
@@ -180,7 +181,35 @@ for electrode_filter in e_f_list
 		filter_and_resample(dataset, filter, resampling_rate)
 	end
 	=#
+	# split according to N cores
+	f_datasets = f_datasets[i:N:end]
 
+	#=
+	## PREPROCESSING
+	for dataset in f_datasets
+		println("Preprocessing dataset: ", dataset)
+		filter_and_resample(dataset, filter, resampling_rate)
+	end
+	=#
+
+	## PROCESSING
+	for dataset in f_datasets
+		println("Processing dataset: ", dataset)
+		get_segments(dataset, 35)
+		normalize_signals(dataset)
+		get_event_mean(dataset, 35)
+		get_electrode_mean(dataset, 35, electrode_filter)
+	end
+
+	## ENTROPY
+	for dataset in f_datasets
+		println("Computing entropy and complexity for dataset: ", dataset)
+		for r in r_list
+			compute_entropy_curve(dataset, electrode_filter, "RCMSE", 2, r, [i for i in 1:45])
+		end
+	end
+
+end
 	## PROCESSING
 	for dataset in f_datasets
 		println("Processing dataset: ", dataset)
