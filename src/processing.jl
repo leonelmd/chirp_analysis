@@ -78,7 +78,7 @@ end
 
 function get_event_mean(dataset, time)
 	# open processed file
-	h5open("./processed_data/"*dataset*"_natural_images_processed.h5", "cw") do processed_file
+	h5open("./processed_data/"*dataset*"_chirp_processed.h5", "cw") do processed_file
 		# check
 		if group_check(processed_file, ["electrode_0", "event_mean"])
 			println("Skipping getting event mean...")
@@ -103,7 +103,7 @@ end
 
 function get_electrode_mean(dataset, time, electrode_filter="none") #filters: none, snr_n
 	# get electrode mean
-	h5open("./processed_data/"*dataset*"_natural_images_processed.h5", "cw") do processed_file
+	h5open("./processed_data/"*dataset*"_chirp_processed.h5", "cw") do processed_file
 		# check
 		if group_check(processed_file, ["electrode_mean", electrode_filter])
 			println("Skipping getting electrode mean...")
@@ -144,7 +144,7 @@ end
 function compute_entropy_curve(dataset, e_f, type, m, r, scales)
 
 	#=
-	h5open("./entropy_data/"*dataset*"_natural_images_entropy.h5", "cw") do entropy_file
+	h5open("./entropy_data/"*dataset*"_chirp_entropy.h5", "cw") do entropy_file
 		# check
 		if group_check(entropy_file, [type, string(r), "electrode_0", "event_1"])
 			println("Skipping computing "*type*" curve with r = "*string(r)*" for all events, for all electrodes...")
@@ -153,7 +153,7 @@ function compute_entropy_curve(dataset, e_f, type, m, r, scales)
 
 		println("Computing "*type*" curve with r = "*string(r)*" for all events, for all electrodes...")
 
-		h5open("./processed_data/"*dataset*"_natural_images_processed.h5", "r") do processed_file
+		h5open("./processed_data/"*dataset*"_chirp_processed.h5", "r") do processed_file
 
 			# compute entropy curve for all events, for all electrodes
 			for i in 0:251
@@ -177,7 +177,7 @@ function compute_entropy_curve(dataset, e_f, type, m, r, scales)
 		end
 	end
 
-	h5open("./entropy_data/"*dataset*"_natural_images_entropy.h5", "cw") do entropy_file
+	h5open("./entropy_data/"*dataset*"_chirp_entropy.h5", "cw") do entropy_file
 		# check
 		if group_check(entropy_file, [type, string(r), "electrode_0", "event_mean"])
 			println("Skipping computing "*type*" curve with r = "*string(r)*" for all event means...")
@@ -186,7 +186,7 @@ function compute_entropy_curve(dataset, e_f, type, m, r, scales)
 
 		println("Computing "*type*" curve with r = "*string(r)*" for all event means...")
 
-		h5open("./processed_data/"*dataset*"_natural_images_processed.h5", "r") do processed_file
+		h5open("./processed_data/"*dataset*"_chirp_processed.h5", "r") do processed_file
 
 			# compute entropy curve for event mean, for all electrodes
 			for i in 0:251
@@ -209,7 +209,7 @@ function compute_entropy_curve(dataset, e_f, type, m, r, scales)
 	end
 	=#
 
-	h5open("./entropy_data/"*dataset*"_natural_images_entropy.h5", "cw") do entropy_file
+	h5open("./entropy_data/"*dataset*"_chirp_entropy.h5", "cw") do entropy_file
 		# check
 		if group_check(entropy_file, [type, string(r), "electrode_mean", e_f])
 			println("Skipping computing "*type*" curve with r = "*string(r)*" for electrode mean with electrode filter = "*e_f*"...")
@@ -218,7 +218,7 @@ function compute_entropy_curve(dataset, e_f, type, m, r, scales)
 
 		println("Computing "*type*" curve with r = "*string(r)*" for electrode mean with electrode filter = "*e_f*"...")
 
-		h5open("./processed_data/"*dataset*"_natural_images_processed.h5", "r") do processed_file
+		h5open("./processed_data/"*dataset*"_chirp_processed.h5", "r") do processed_file
 
 			# compute entropy curve for electrode mean
 			signal = read(processed_file, "electrode_mean/"*e_f*"/data")
