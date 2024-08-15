@@ -109,9 +109,6 @@ datasets = [
 	"MR-0448",
 	"MR-0447",
 	"MR-0446",
-	"MR-0448",
-	"MR-0447",
-	"MR-0446",
 	"MR-0293",
 	"MR-0292-t2",
 	"MR-0292-t1",
@@ -181,35 +178,7 @@ for electrode_filter in e_f_list
 		filter_and_resample(dataset, filter, resampling_rate)
 	end
 	=#
-	# split according to N cores
-	f_datasets = f_datasets[i:N:end]
 
-	#=
-	## PREPROCESSING
-	for dataset in f_datasets
-		println("Preprocessing dataset: ", dataset)
-		filter_and_resample(dataset, filter, resampling_rate)
-	end
-	=#
-
-	## PROCESSING
-	for dataset in f_datasets
-		println("Processing dataset: ", dataset)
-		get_segments(dataset, 35)
-		normalize_signals(dataset)
-		get_event_mean(dataset, 35)
-		get_electrode_mean(dataset, 35, electrode_filter)
-	end
-
-	## ENTROPY
-	for dataset in f_datasets
-		println("Computing entropy and complexity for dataset: ", dataset)
-		for r in r_list
-			compute_entropy_curve(dataset, electrode_filter, "RCMSE", 2, r, [i for i in 1:45])
-		end
-	end
-
-end
 	## PROCESSING
 	for dataset in f_datasets
 		println("Processing dataset: ", dataset)
