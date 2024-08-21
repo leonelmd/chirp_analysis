@@ -28,7 +28,7 @@ e_f_list = [
 ]
 
 # divide the datasets into N chunks
-N = 16
+N = 88
 i = parse(Int, ARGS[1])
 
 datasets = [
