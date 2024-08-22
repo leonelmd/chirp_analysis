@@ -180,6 +180,7 @@ for electrode_filter in e_f_list
 	=#
 
 	## PROCESSING
+	#=
 	for dataset in f_datasets
 		println("Processing dataset: ", dataset)
 		get_segments(dataset, 35)
@@ -187,6 +188,7 @@ for electrode_filter in e_f_list
 		get_event_mean(dataset, 35)
 		get_electrode_mean(dataset, 35, electrode_filter)
 	end
+	=#
 
 	## ENTROPY
 	for dataset in f_datasets

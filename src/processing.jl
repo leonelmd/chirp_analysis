@@ -143,6 +143,7 @@ end
 
 function compute_entropy_curve(dataset, e_f, type, m, r, scales)
 
+	#=
 	h5open("./entropy_data/"*dataset*"_chirp_entropy.h5", "cw") do entropy_file
 		# check
 		if group_check(entropy_file, [type, string(r), "electrode_0", "event_1"])
@@ -175,6 +176,7 @@ function compute_entropy_curve(dataset, e_f, type, m, r, scales)
 			end
 		end
 	end
+	=#
 
 	h5open("./entropy_data/"*dataset*"_chirp_entropy.h5", "cw") do entropy_file
 		# check
