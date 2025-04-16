@@ -87,3 +87,56 @@ function filter_and_resample(dataset, filter, resampling_rate)
 		println("Done.")
 	end
 end
+
+function filter_and_resample_photodiode(dataset, filter, resampling_rate)
+	h5open("./preprocessed_data/"*dataset*"_chirp_preprocessed.h5", "cw") do preprocessed_file
+		# check if average_signal group exists
+		if group_check(preprocessed_file, ["photodiode"])
+			println("Skipping preprocessing of photodiode channel...")
+			return
+		end
+
+		# open raw file
+		file = h5open("./raw_data/"*dataset*"_chirp.h5", "r")
+		stream = read(file, "Data/Recording_0/AnalogStream/Stream_1")
+		close(file)
+
+		# open event list file
+
+		signal_length = trunc(Int, length(stream["ChannelData"])/4)	# 4 channels
+
+		for i in [1,]
+			println("Processing electrode_"*string(i-1)*"...")
+
+			info = stream["InfoChannel"][i]
+			signal_raw = stream["ChannelData"][signal_length*(i-1)+1:signal_length*i]
+
+			signal = signal_reconstruct(signal_raw, info)
+			signal = [s*1000 for s in signal] # Convert from V to mV
+
+			for j in 2:11
+				csv_file = readlines("./raw_data/event_list_"*dataset*"_chirp.csv")
+				event_start = [split(line, ",") for line in csv_file][j][2]
+				event_start = parse(Int, event_start)
+				event_end = [split(line, ",") for line in csv_file][j][3]
+				event_end = parse(Int, event_end)
+
+				subsignal = signal[event_start:event_end]
+
+				# filter signal
+				if filter["type"] == "HPF"
+					filtered_signal = high_pass_filter(subsignal, filter["cutoff"]/nyquist_frequency, 5)
+				elseif filter["type"] == "BPF"
+					filtered_signal = band_pass_filter(subsignal, filter["cutoff_low"]/nyquist_frequency, filter["cutoff_high"]/nyquist_frequency, 5)
+				end
+
+				# resample signal
+				step = trunc(Int, sampling_rate / resampling_rate)
+				resampled_signal = filtered_signal[1:step:end]
+
+				preprocessed_file["photodiode"*"/event_"*string(j-1)*"/data"] = resampled_signal
+			end
+		end
+		println("Done.")
+	end
+end
