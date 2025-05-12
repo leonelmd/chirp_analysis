@@ -106,7 +106,7 @@ function filter_and_resample_photodiode(dataset, filter, resampling_rate)
 		signal_length = trunc(Int, length(stream["ChannelData"])/4)	# 4 channels
 
 		for i in [1,]
-			println("Processing electrode_"*string(i-1)*"...")
+			println("Processing photodiode...")
 
 			info = stream["InfoChannel"][i]
 			signal_raw = stream["ChannelData"][signal_length*(i-1)+1:signal_length*i]
