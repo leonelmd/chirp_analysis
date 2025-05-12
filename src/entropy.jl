@@ -29,7 +29,7 @@ end
 
 function sample_entropy(signal, m, r)
 	A, B = sample_entropy_matches(signal, m, r)
-	return -log(A/B)
+	return (A == 0 || B == 0) ? Inf : -log(A / B)
 end
 
 function fuzzy_entropy_matches(signal, m, r)
@@ -46,7 +46,7 @@ end
 
 function fuzzy_entropy(signal, m, r)
 	A, B = fuzzy_entropy_matches(signal, m, r)
-	return -log(A/B)
+	return (A == 0 || B == 0) ? Inf : -log(A / B)
 end
 
 function multiscale_entropy(signal, m, r, e, scales = [i for i in 1:trunc(Int, length(signal)/(m+10))])
