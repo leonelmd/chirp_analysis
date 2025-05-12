@@ -11,6 +11,7 @@ using Statistics
 sampling_rate = 20000
 resampling_rate = 250
 nyquist_frequency = 0.5 * sampling_rate
+data_folder = "~/../neuroeng/data/UV_uERG"
 
 function group_check(file, list, i=0)
 	if i == length(list)
@@ -122,7 +123,7 @@ function get_electrode_mean(dataset, time, electrode_filter="none") #filters: no
 		else
 			threshold = parse(Float64, electrode_filter[5:end])
 			# add SNR filter based on SNR h5 file
-			snr_file = h5open("../SNR/"*dataset*"_SNR.h5", "r")
+			snr_file = h5open(data_folder*"/"*dataset*"_SNR.h5", "r")
 
 			filtered_electrodes = []
 
@@ -143,7 +144,6 @@ end
 
 function compute_entropy_curve(dataset, e_f, type, m, r, scales)
 
-	#=
 	h5open("./entropy_data/"*dataset*"_chirp_entropy.h5", "cw") do entropy_file
 		# check
 		if group_check(entropy_file, [type, string(r), "electrode_0", "event_1"])
@@ -176,7 +176,6 @@ function compute_entropy_curve(dataset, e_f, type, m, r, scales)
 			end
 		end
 	end
-	=#
 
 	h5open("./entropy_data/"*dataset*"_chirp_entropy.h5", "cw") do entropy_file
 		# check

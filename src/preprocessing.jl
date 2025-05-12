@@ -9,6 +9,7 @@ using CurveFit
 # parameters
 sampling_rate = 20000
 nyquist_frequency = 0.5 * sampling_rate
+data_folder = "~/../neuroeng/data/UV_uERG"
 
 function group_check(file, list, i=0)
 	if i == length(list)
@@ -44,7 +45,7 @@ function filter_and_resample(dataset, filter, resampling_rate)
 		end
 
 		# open raw file
-		file = h5open("./raw_data/"*dataset*"_chirp.h5", "r")
+		file = h5open(data_folder*"/"*dataset*"_chirp.h5", "r")
 		stream = read(file, "Data/Recording_0/AnalogStream/Stream_0")
 		close(file)
 
@@ -62,7 +63,7 @@ function filter_and_resample(dataset, filter, resampling_rate)
 			signal = [s*1000 for s in signal] # Convert from V to mV
 
 			for j in 2:11
-				csv_file = readlines("./raw_data/event_list_"*dataset*"_chirp.csv")
+				csv_file = readlines(data_folder*"/event_list_"*dataset*"_chirp.csv")
 				event_start = [split(line, ",") for line in csv_file][j][2]
 				event_start = parse(Int, event_start)
 				event_end = [split(line, ",") for line in csv_file][j][3]
@@ -97,7 +98,7 @@ function filter_and_resample_photodiode(dataset, filter, resampling_rate)
 		end
 
 		# open raw file
-		file = h5open("./raw_data/"*dataset*"_chirp.h5", "r")
+		file = h5open(data_folder*"/"*dataset*"_chirp.h5", "r")
 		stream = read(file, "Data/Recording_0/AnalogStream/Stream_1")
 		close(file)
 
@@ -115,7 +116,7 @@ function filter_and_resample_photodiode(dataset, filter, resampling_rate)
 			signal = [s*1000 for s in signal] # Convert from V to mV
 
 			for j in 2:11
-				csv_file = readlines("./raw_data/event_list_"*dataset*"_chirp.csv")
+				csv_file = readlines(data_folder*"/event_list_"*dataset*"_chirp.csv")
 				event_start = [split(line, ",") for line in csv_file][j][2]
 				event_start = parse(Int, event_start)
 				event_end = [split(line, ",") for line in csv_file][j][3]
