@@ -10,6 +10,7 @@ using CurveFit
 sampling_rate = 20000
 nyquist_frequency = 0.5 * sampling_rate
 data_folder = "~/../neuroeng/data/UV_uERG"
+stim_suffix = "_chirpLED_canon"
 
 function group_check(file, list, i=0)
 	if i == length(list)
@@ -37,7 +38,7 @@ function band_pass_filter(signal, nco_low, nco_high, order)
 end
 
 function filter_and_resample(dataset, filter, resampling_rate)
-	h5open("./preprocessed_data/"*dataset*"_chirp_preprocessed.h5", "cw") do preprocessed_file
+	h5open("./preprocessed_data/"*dataset*stim_suffix*"_preprocessed.h5", "cw") do preprocessed_file
 		# check if average_signal group exists
 		if group_check(preprocessed_file, ["electrode_0"])
 			println("Skipping preprocessing...")
@@ -45,7 +46,7 @@ function filter_and_resample(dataset, filter, resampling_rate)
 		end
 
 		# open raw file
-		file = h5open(data_folder*"/"*dataset*"_chirp*.h5", "r")
+		file = h5open(data_folder*"/"*dataset*stim_suffix*".h5", "r")
 		stream = read(file, "Data/Recording_0/AnalogStream/Stream_0")
 		close(file)
 
@@ -63,7 +64,7 @@ function filter_and_resample(dataset, filter, resampling_rate)
 			signal = [s*1000 for s in signal] # Convert from V to mV
 
 			for j in 2:11
-				csv_file = readlines(data_folder*"/event_list_"*dataset*"_chirp*.csv")
+				csv_file = readlines(data_folder*"/event_list_"*dataset*stim_suffix*".csv")
 				event_start = [split(line, ",") for line in csv_file][j][2]
 				event_start = parse(Int, event_start)
 				event_end = [split(line, ",") for line in csv_file][j][3]
@@ -90,7 +91,7 @@ function filter_and_resample(dataset, filter, resampling_rate)
 end
 
 function filter_and_resample_photodiode(dataset, filter, resampling_rate)
-	h5open("./preprocessed_data/"*dataset*"_chirp_preprocessed.h5", "cw") do preprocessed_file
+	h5open("./preprocessed_data/"*dataset*stim_suffix*"_preprocessed.h5", "cw") do preprocessed_file
 		# check if average_signal group exists
 		if group_check(preprocessed_file, ["photodiode"])
 			println("Skipping preprocessing of photodiode channel...")
@@ -98,7 +99,7 @@ function filter_and_resample_photodiode(dataset, filter, resampling_rate)
 		end
 
 		# open raw file
-		file = h5open(data_folder*"/"*dataset*"_chirp*.h5", "r")
+		file = h5open(data_folder*"/"*dataset*stim_suffix*".h5", "r")
 		stream = read(file, "Data/Recording_0/AnalogStream/Stream_1")
 		close(file)
 
@@ -116,7 +117,7 @@ function filter_and_resample_photodiode(dataset, filter, resampling_rate)
 			signal = [s*1000 for s in signal] # Convert from V to mV
 
 			for j in 2:11
-				csv_file = readlines(data_folder*"/event_list_"*dataset*"_chirp*.csv")
+				csv_file = readlines(data_folder*"/event_list_"*dataset*stim_suffix*".csv")
 				event_start = [split(line, ",") for line in csv_file][j][2]
 				event_start = parse(Int, event_start)
 				event_end = [split(line, ",") for line in csv_file][j][3]
