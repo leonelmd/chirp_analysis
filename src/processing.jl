@@ -9,7 +9,7 @@ using Statistics
 
 # file handling parameters
 data_folder = "data"
-stim_suffix = "_chip" #"_chirpLED_canon"
+stim_suffix = "_chirp" #"_chirpLED_canon"
 
 # signal processing parameters
 sampling_rate = 20000

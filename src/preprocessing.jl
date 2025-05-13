@@ -8,7 +8,7 @@ using CurveFit
 
 # file handling parameters
 data_folder = "data"
-stim_suffix = "_chip" #"_chirpLED_canon"
+stim_suffix = "_chirp" #"_chirpLED_canon"
 
 # signal processing parameters
 sampling_rate = 20000
@@ -22,7 +22,7 @@ N_rep = 10
 # reading event list
 col_start = 2
 col_end = 3
-if "LED_canon" in stim_suffix #LED_canon experiments have different event_list structure
+if occursin("LED_canon", stim_suffix) #LED_canon experiments have different event_list structure
 	col_start = 1
 	col_end = 2
 end
