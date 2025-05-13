@@ -7,12 +7,18 @@ using HDF5
 using DSP
 using Statistics
 
-# parameters
+# file handling parameters
+data_folder = "data"
+stim_suffix = "_chip" #"_chirpLED_canon"
+
+# signal processing parameters
 sampling_rate = 20000
-resampling_rate = 250
 nyquist_frequency = 0.5 * sampling_rate
-data_folder = "~/../neuroeng/data/UV_uERG"
-stim_suffix = "_chirpLED_canon"
+resampling_rate = 250
+
+# electrodes and events
+N_elec = 252
+N_rep = 10
 
 function group_check(file, list, i=0)
 	if i == length(list)
@@ -38,8 +44,8 @@ function get_segments(dataset, time)
 
 		h5open("./preprocessed_data/"*dataset*stim_suffix*"_preprocessed.h5", "r") do preprocessed_file
 			# get segments
-			for i in 1:252
-				for j in 2:11
+			for i in 1:N_elec
+				for j in 2:(N_rep + 1) #add 1 to indices-->first column header
 					signal = read(preprocessed_file, "electrode_"*string(i-1)*"/event_"*string(j-1)*"/data")
 					processed_file["electrode_"*string(i-1)*"/event_"*string(j-1)*"/data"] = signal[1:resampling_rate*time]
 				end
@@ -62,8 +68,8 @@ function normalize_signals(dataset)
 		println("Normalize signal segment... ")
 
 		# get segments
-		for i in 1:252
-			for j in 2:11
+		for i in 1:N_elec
+			for j in 2:(N_rep + 1) #add 1 to indices-->first column header
 				signal = read(processed_file, "electrode_"*string(i-1)*"/event_"*string(j-1)*"/data")
 
 				# normalize
@@ -90,12 +96,12 @@ function get_event_mean(dataset, time)
 		println("Getting event mean.. ")
 
 		# get event mean per electrode
-		for i in 1:252
+		for i in 1:N_elec
 			event_mean = zeros(resampling_rate*time)
-			for j in 2:11
+			for j in 2:(N_rep + 1) #add 1 to indices-->first column header
 				event_mean += read(processed_file, "electrode_"*string(i-1)*"/event_"*string(j-1)*"/normalized/data")
 			end
-			event_mean = event_mean ./ 10
+			event_mean = event_mean ./ N_rep
 			processed_file["electrode_"*string(i-1)*"/event_mean/data"] = event_mean
 		end
 	end
@@ -116,10 +122,10 @@ function get_electrode_mean(dataset, time, electrode_filter="none") #filters: no
 
 		mean_signal = zeros(resampling_rate*time)
 		if electrode_filter == "none"
-			for i in 1:252
+			for i in 1:N_elec
 				mean_signal += read(processed_file, "electrode_"*string(i-1)*"/event_mean/data")
 			end
-			mean_signal = mean_signal ./ 252
+			mean_signal = mean_signal ./ N_elec
 			processed_file["electrode_mean/none/data"] = mean_signal
 		else
 			threshold = parse(Float64, electrode_filter[5:end])
@@ -128,7 +134,7 @@ function get_electrode_mean(dataset, time, electrode_filter="none") #filters: no
 
 			filtered_electrodes = []
 
-			for i in 1:252
+			for i in 1:N_elec
 				if read(snr_file, "electrode_"*string(i-1)*"/SNR") >= threshold
 					push!(filtered_electrodes, "electrode_"*string(i-1))
 					mean_signal += read(processed_file, "electrode_"*string(i-1)*"/event_mean/data")
@@ -145,6 +151,7 @@ end
 
 function compute_entropy_curve(dataset, e_f, type, m, r, scales)
 
+	#=
 	h5open("./entropy_data/"*dataset*stim_suffix*"_entropy.h5", "cw") do entropy_file
 		# check
 		if group_check(entropy_file, [type, string(r), "electrode_0", "event_1"])
@@ -208,7 +215,8 @@ function compute_entropy_curve(dataset, e_f, type, m, r, scales)
 			end
 		end
 	end
-
+	=#
+	
 	h5open("./entropy_data/"*dataset*stim_suffix*"_entropy.h5", "cw") do entropy_file
 		# check
 		if group_check(entropy_file, [type, string(r), "electrode_mean", e_f])
