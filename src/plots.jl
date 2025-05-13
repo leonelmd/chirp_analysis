@@ -707,13 +707,13 @@ t_list = ["RCMSE"]
 r_list = ["0.2"]
 e_f_list = [
 	"none",
-	"snr_0",
-	"snr_1",
-	"snr_2",
-	"snr_3",
-	"snr_4",
-	"snr_5",
-	"snr_6",
+	# "snr_0",
+	# "snr_1",
+	# "snr_2",
+	# "snr_3",
+	# "snr_4",
+	# "snr_5",
+	# "snr_6",
 	"snr_7"
 ]
 
@@ -783,15 +783,15 @@ function SNR_map(dataset)
 end
 
 # Group entropy curves
-function group_entropy_curves(group)
-	for e_f in ["none", "snr_3", "snr_7"]
+function group_entropy_curves(group,  e_f_list, type="RCMSE", r=0.2)
+	for e_f in e_f_list #["none", "snr_3", "snr_7"]
 		plot(xlims=(1, 45), size=(800, 500), dpi=300, legend=:none, title="$(group_labels[group]) entropy curves w/ electrode filter: $(e_f)", xlabel="Scale", ylabel="SampEn")
 		mean_entropy_curve = zeros(45)
 		count = 0
 			
 		for dataset in grouped_datasets[group]
 			entropy_file = h5open("./entropy_data/$(dataset)_chirp_entropy.h5", "r")
-			entropy_data = read(entropy_file, "/RCMSE/0.2/electrode_mean")
+			entropy_data = read(entropy_file, "/"*type*"/"*string(r)*"/electrode_mean")
 			if !haskey(entropy_data, e_f)
 				continue
 			end
@@ -1783,6 +1783,9 @@ for group in groups
 		if !isdir("./plots/$(group_labels[group])/$(dataset)/signals")
 			mkdir("./plots/$(group_labels[group])/$(dataset)/signals")
 		end
+		if !isdir("./plots/$(group_labels[group])/$(dataset)/signals/electrodes")
+			mkdir("./plots/$(group_labels[group])/$(dataset)/signals/electrodes")
+		end
 		if !isdir("./plots/$(group_labels[group])/$(dataset)/entropy")
 			mkdir("./plots/$(group_labels[group])/$(dataset)/entropy")
 		end
@@ -1790,7 +1793,7 @@ for group in groups
 end
 
 for dataset in datasets
-	#signal_and_spectrogram_electrode_mean(dataset)
+	signal_and_spectrogram_electrode_mean(dataset)
 	SNR_map(dataset)
 
 	#entropy
