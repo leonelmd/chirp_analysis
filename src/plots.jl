@@ -879,7 +879,7 @@ function mean_entropy_curves_comparison(e_f_list=["none", "snr_7"], type="RCMSE"
 end
 
 # SNR comparison
-function SNR_comparison(dataset, e_f_list=["none", "snr_7"], t, r)
+function SNR_comparison(dataset, e_f_list=["none", "snr_7"], t="RCMSE", r=0.2)
 	entropy_file = h5open("./entropy_data/$(dataset)_chirp_entropy.h5", "r")
 	entropy_data = read(entropy_file, "/$(t)/$(r)")
 
