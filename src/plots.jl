@@ -793,7 +793,7 @@ function group_entropy_curves(group, e_f_list=["none", "snr_7"], type="RCMSE", r
 		count = 0
 			
 		for dataset in grouped_datasets[group]
-			entropy_file = h5open("./entropy_data/$(dataset)_chirp_entropy.h5", "r")
+			entropy_file = h5open("./entropy_data/$(dataset)"*stim_suffix*"_entropy.h5", "r")
 			entropy_data = read(entropy_file, "/"*type*"/"*string(r)*"/electrode_mean")
 			if !haskey(entropy_data, e_f)
 				continue
@@ -821,7 +821,7 @@ function group_entropy_curves_extra(group, e_f_list=["none", "snr_7"], type="RCM
 		count = 0
 			
 		for dataset in grouped_datasets[group]
-			entropy_file = h5open("./entropy_data/$(dataset)_chirp_entropy.h5", "r")
+			entropy_file = h5open("./entropy_data/$(dataset)"*stim_suffix*"_entropy.h5", "r")
 			entropy_data = read(entropy_file, "/"*type*"/"*string(r)*"/electrode_mean")
 			if !haskey(entropy_data, e_f)
 				continue
@@ -858,7 +858,7 @@ function mean_entropy_curves_comparison(e_f_list=["none", "snr_7"], type="RCMSE"
 		for group in groups
 			count = 0
 			for dataset in grouped_datasets[group]
-				entropy_file = h5open("./entropy_data/$(dataset)_chirp_entropy.h5", "r")
+				entropy_file = h5open("./entropy_data/$(dataset)"*stim_suffix*"_entropy.h5", "r")
 				entropy_data = read(entropy_file, "/"*type*"/"*string(r)*"/electrode_mean")
 				if !haskey(entropy_data, e_f)
 					continue
@@ -880,7 +880,7 @@ end
 
 # SNR comparison
 function SNR_comparison(dataset, e_f_list=["none", "snr_7"], t="RCMSE", r=0.2)
-	entropy_file = h5open("./entropy_data/$(dataset)_chirp_entropy.h5", "r")
+	entropy_file = h5open("./entropy_data/$(dataset)"*stim_suffix*"_entropy.h5", "r")
 	entropy_data = read(entropy_file, "/$(t)/$(r)")
 
 	l = @layout [a
@@ -1796,8 +1796,8 @@ for group in groups
 end
 
 for dataset in datasets
-	signal_and_spectrogram_electrode_mean(dataset)
-	SNR_map(dataset)
+	# signal_and_spectrogram_electrode_mean(dataset)
+	# SNR_map(dataset)
 
 	#entropy
 	for t in t_list
