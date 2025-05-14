@@ -52,6 +52,16 @@ function band_pass_filter(signal, nco_low, nco_high, order)
 	return filtfilt(filter, signal)
 end
 
+function notch_filter(signal, nyquist_frequency, notch_freq=50, order=4)
+	bandwidth = 2  # Hz (defines sharpness of the notch)
+	# Normalize frequencies to Nyquist (fs/2)
+	low = (notch_freq - bandwidth/2) / (nyquist_frequency)
+	high = (notch_freq + bandwidth/2) / (nyquist_frequency)
+	# Design Butterworth notch filter
+	notch = digitalfilter(Bandstop(low, high), Butterworth(order))
+	return filtfilt(notch, signal)
+end
+
 function filter_and_resample(dataset, filter, resampling_rate)
 	h5open("./preprocessed_data/"*dataset*stim_suffix*"_preprocessed.h5", "cw") do preprocessed_file
 		# check if average_signal group exists
@@ -95,6 +105,7 @@ function filter_and_resample(dataset, filter, resampling_rate)
 					filtered_signal = high_pass_filter(subsignal, filter["cutoff"]/nyquist_frequency, filt_order)
 				elseif filter["type"] == "BPF"
 					filtered_signal = band_pass_filter(subsignal, filter["cutoff_low"]/nyquist_frequency, filter["cutoff_high"]/nyquist_frequency, filt_order)
+					# filtered_signal = notch_filter(filtered_signal, nyquist_frequency, 50)
 				end
 				println("Signal filtered...")
 
