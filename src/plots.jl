@@ -9,6 +9,9 @@ using DSP
 include("processing.jl")
 include("entropy.jl")
 
+data_folder = "data"
+stim_suffix = "_chirp" #"_chirpLED_canon"
+
 coordinates = [
 	[1500, 1100],
 	[1000, 900],
@@ -703,7 +706,7 @@ v_ls_index["F"] = :dash
 v_ls_index["G"] = :solid
 v_ls_index["H"] = :dash
 
-t_list = ["RCMSE"]
+t_list = ["FRCMSE"]
 r_list = ["0.2"]
 e_f_list = [
 	"none",
@@ -730,7 +733,7 @@ end
 
 # Signal and spectrogram of electrode mean
 function signal_and_spectrogram_electrode_mean(dataset)
-	processed_file = h5open("./processed_data/$(dataset)_chirp_processed.h5", "r")
+	processed_file = h5open("./processed_data/$(dataset)"*stim_suffix*"_processed.h5", "r")
 	e_f_computed = keys(processed_file["electrode_mean"])
 
 	for e_f in e_f_computed
@@ -754,12 +757,12 @@ end
 # SNR map
 function SNR_map(dataset)
 	# check if SNR file exists
-	if !isfile("../SNR/"*dataset*"_SNR.h5")
+	if !isfile(data_folder*"/"*dataset*"_SNR.h5")
 		println("SNR file not found for dataset: ", dataset)
 		return
 	end
 
-	snr_file = h5open("../SNR/"*dataset*"_SNR.h5", "r")
+	snr_file = h5open(data_folder*"/"*dataset*"_SNR.h5", "r")
 	snr_map = zeros(16, 16)
 	for n in 1:252
 		snr = read(snr_file, "electrode_$(n-1)/SNR")
@@ -783,8 +786,8 @@ function SNR_map(dataset)
 end
 
 # Group entropy curves
-function group_entropy_curves(group,  e_f_list, type="RCMSE", r=0.2)
-	for e_f in e_f_list #["none", "snr_3", "snr_7"]
+function group_entropy_curves(group, e_f_list=["none", "snr_7"], type="RCMSE", r=0.2)
+	for e_f in e_f_list
 		plot(xlims=(1, 45), size=(800, 500), dpi=300, legend=:none, title="$(group_labels[group]) entropy curves w/ electrode filter: $(e_f)", xlabel="Scale", ylabel="SampEn")
 		mean_entropy_curve = zeros(45)
 		count = 0
@@ -807,19 +810,19 @@ function group_entropy_curves(group,  e_f_list, type="RCMSE", r=0.2)
 		mean_entropy_curve /= count
 		plot!(mean_entropy_curve, color=v_color_index[group], lw=2)
 
-		savefig("./plots/$(group_labels[group])/group_entropy_curves_$(e_f).svg")
+		savefig("./plots/$(group_labels[group])/group_entropy_curves_"*type*"_"*string(r)*"$(e_f).svg")
 	end
 end
 
-function group_entropy_curves_extra(group)
-	for e_f in ["none", "snr_3", "snr_7"]
+function group_entropy_curves_extra(group, e_f_list=["none", "snr_7"], type="RCMSE", r=0.2)
+	for e_f in e_f_list
 		plot(xlims=(1, 45), size=(800, 500), dpi=300, legend=:none, title="$(group_labels[group]) entropy curves w/ electrode filter: $(e_f)", xlabel="Scale", ylabel="SampEn")
 		mean_entropy_curve = zeros(45)
 		count = 0
 			
 		for dataset in grouped_datasets[group]
 			entropy_file = h5open("./entropy_data/$(dataset)_chirp_entropy.h5", "r")
-			entropy_data = read(entropy_file, "/RCMSE/0.2/electrode_mean")
+			entropy_data = read(entropy_file, "/"*type*"/"*string(r)*"/electrode_mean")
 			if !haskey(entropy_data, e_f)
 				continue
 			end
@@ -839,13 +842,13 @@ function group_entropy_curves_extra(group)
 		mean_entropy_curve /= count
 		plot!(mean_entropy_curve, color=v_color_index[group], lw=2)
 
-		savefig("./plots/extra/$(group_labels[group])/group_entropy_curves_$(e_f).svg")
+		savefig("./plots/extra/$(group_labels[group])/group_entropy_curves_"*type*"_"*string(r)*"$(e_f).svg")
 	end
 end
 
 # Mean entropy curves comparison
-function mean_entropy_curves_comparison()
-	for e_f in ["none", "snr_3", "snr_7"]
+function mean_entropy_curves_comparison(e_f_list=["none", "snr_7"], type="RCMSE", r=0.2)
+	for e_f in e_f_list
 		plot(xlims=(1, 45), size=(800, 500), dpi=300, title="Mean entropy curves comparison w/ electrode filter: $(e_f)", xlabel="Scale", ylabel="SampEn")
 		mean_entropy_curves = Dict()
 		for group in groups
@@ -856,7 +859,7 @@ function mean_entropy_curves_comparison()
 			count = 0
 			for dataset in grouped_datasets[group]
 				entropy_file = h5open("./entropy_data/$(dataset)_chirp_entropy.h5", "r")
-				entropy_data = read(entropy_file, "/RCMSE/0.2/electrode_mean")
+				entropy_data = read(entropy_file, "/"*type*"/"*string(r)*"/electrode_mean")
 				if !haskey(entropy_data, e_f)
 					continue
 				end
@@ -871,12 +874,12 @@ function mean_entropy_curves_comparison()
 			plot!(mean_entropy_curves[group], color=v_color_index[group], label=group_labels[group], ls=v_ls_index[group])
 		end
 
-		savefig("./plots/RCMSE_0.2/mean_entropy_curves_comparison_$(e_f).svg")
+		savefig("./plots/"*type*"_"*string(r)*"/mean_entropy_curves_comparison_$(e_f).svg")
 	end
 end
 
 # SNR comparison
-function SNR_comparison(dataset, t, r)
+function SNR_comparison(dataset, e_f_list=["none", "snr_7"], t, r)
 	entropy_file = h5open("./entropy_data/$(dataset)_chirp_entropy.h5", "r")
 	entropy_data = read(entropy_file, "/$(t)/$(r)")
 
@@ -886,11 +889,11 @@ function SNR_comparison(dataset, t, r)
 	]
 	p1 = plot(xlims=(1, 45))
 	plot!(xlabel="Scale", ylabel="SampEn")
-	plot!(title="RCMSE curves of $(dataset)\ncomparison of electrode filters")
+	plot!(title=t*" curves of $(dataset)\ncomparison of electrode filters")
 	vspan!([1, 15], color=:black, alpha=0.1, label=:none)
 	vspan!([16, 30], color=:black, alpha=0.1, label=:none)
 	vspan!([31, 45], color=:black, alpha=0.1, label=:none)
-	for e_f in ["none", "snr_3", "snr_7"]
+	for e_f in e_f_list
 		if !haskey(entropy_data["electrode_mean"], e_f)
 			continue
 		end
@@ -902,7 +905,7 @@ function SNR_comparison(dataset, t, r)
 	p2 = []
 	for (segment, lim) in zip(["all", "15", "30", "45"], ["1:45", "1:15", "16:30", "31:45"])
 		p = plot(framestyle = :origin, xlims=(-1, 1), grid=false, xaxis=false, title="LRS "*lim)
-		for e_f in ["none", "snr_3", "snr_7"]
+		for e_f in e_f_list
 			if !haskey(entropy_data["electrode_mean"], e_f)
 				continue
 			end
@@ -923,7 +926,7 @@ function SNR_comparison(dataset, t, r)
 	p3 = []
 	for (segment, lim) in zip(["all", "15", "30", "45"], ["1:45", "1:15", "16:30", "31:45"])
 		p = plot(framestyle = :origin, xlims=(-1, 1), grid=false, xaxis=false, title="nAUC "*lim)
-		for e_f in ["none", "snr_3", "snr_7"]
+		for e_f in e_f_list
 			if !haskey(entropy_data["electrode_mean"], e_f)
 				continue
 			end
@@ -951,7 +954,7 @@ end
 
 # LRS map
 function LRS_map(dataset, t, r)
-	entropy_file = h5open("./entropy_data/$(dataset)_chirp_entropy.h5", "r")
+	entropy_file = h5open("./entropy_data/$(dataset)"*stim_suffix*"_entropy.h5", "r")
 	lrs_all = zeros(16, 16)
 	lrs_15 = zeros(16, 16)
 	lrs_30 = zeros(16, 16)
@@ -1006,12 +1009,12 @@ function LRS_map(dataset, t, r)
 	savefig("./plots/$(group)/$(dataset)/entropy/LRS_map_$(t)_$(r)_none.svg")
 
 	# check if SNR file exists
-	if !isfile("../SNR/"*dataset*"_SNR.h5")
+	if !isfile(data_folder*"/"*dataset*"_SNR.h5")
 		println("SNR file not found for dataset: ", dataset)
 		return
 	end
 
-	snr_file = h5open("../SNR/"*dataset*"_SNR.h5", "r")
+	snr_file = h5open(data_folder*"/"*dataset*"_SNR.h5", "r")
 	snr_map = zeros(16, 16)
 	for n in 1:252
 		snr = read(snr_file, "electrode_$(n-1)/SNR")
@@ -1096,7 +1099,7 @@ end
 
 # nAUC map
 function nAUC_map(dataset, t, r)
-	entropy_file = h5open("./entropy_data/$(dataset)_chirp_entropy.h5", "r")
+	entropy_file = h5open("./entropy_data/$(dataset)"*stim_suffix*"_entropy.h5", "r")
 	nauc_all = zeros(16, 16)
 	nauc_15 = zeros(16, 16)
 	nauc_30 = zeros(16, 16)
@@ -1152,12 +1155,12 @@ function nAUC_map(dataset, t, r)
 	savefig("./plots/$(group)/$(dataset)/entropy/nAUC_map_$(t)_$(r)_none.svg")
 
 	# check if SNR file exists
-	if !isfile("../SNR/"*dataset*"_SNR.h5")
+	if !isfile(data_folder*"/"*dataset*"_SNR.h5")
 		println("SNR file not found for dataset: ", dataset)
 		return
 	end
 
-	snr_file = h5open("../SNR/"*dataset*"_SNR.h5", "r")
+	snr_file = h5open(data_folder*"/"*dataset*"_SNR.h5", "r")
 	snr_map = zeros(16, 16)
 	for n in 1:252
 		snr = read(snr_file, "electrode_$(n-1)/SNR")
@@ -1241,9 +1244,9 @@ function nAUC_map(dataset, t, r)
 end
 
 # LRS distribution
-function LRS_distribution(t, r)
+function LRS_distribution(e_f_list, t, r)
 	for (segment, lim) in zip(["all", "15", "30", "45"], ["1-45", "1-15", "16-30", "31-45"])
-		for e_f in ["none", "snr_3", "snr_7"]
+		for e_f in e_f_list
 			# LRS distribution
 			local grouped_lrs = Dict()
 			local grouped_lrs_m = Dict()
@@ -1255,7 +1258,7 @@ function LRS_distribution(t, r)
 			end
 			for group in groups
 				for dataset in grouped_datasets[group]
-					entropy_file = h5open("./entropy_data/$(dataset)_chirp_entropy.h5", "r")
+					entropy_file = h5open("./entropy_data/$(dataset)"*stim_suffix*"_entropy.h5", "r")
 					entropy_data = read(entropy_file, "/$(t)/$(r)")
 
 					if !haskey(entropy_data["electrode_mean"], e_f)
@@ -1301,9 +1304,9 @@ function LRS_distribution(t, r)
 end
 
 # LRS alt distribution
-function LRS_alt_distribution(t, r)
+function LRS_alt_distribution(e_f_list, t, r)
 	for (segment, lim) in zip(["all", "15", "30", "45"], ["1-45", "1-15", "16-30", "31-45"])
-		for e_f in ["none", "snr_3", "snr_7"]
+		for e_f in e_f_list
 			# LRS distribution
 			local grouped_lrs = Dict()
 			local grouped_lrs_m = Dict()
@@ -1315,9 +1318,9 @@ function LRS_alt_distribution(t, r)
 			end
 			for group in groups
 				for dataset in grouped_datasets[group]
-					entropy_file = h5open("./entropy_data/$(dataset)_chirp_entropy.h5", "r")
+					entropy_file = h5open("./entropy_data/$(dataset)"*stim_suffix*"_entropy.h5", "r")
 
-					if e_f != "none" && !isfile("../SNR/$(dataset)_SNR.h5")
+					if e_f != "none" && !isfile(data_folder*"/$(dataset)_SNR.h5")
 						println("SNR file not found for dataset: ", dataset)
 						continue
 					end
@@ -1341,7 +1344,7 @@ function LRS_alt_distribution(t, r)
 							count += 1
 						end
 					else
-						snr_file = h5open("../SNR/$(dataset)_SNR.h5", "r")
+						snr_file = h5open(data_folder*"/$(dataset)_SNR.h5", "r")
 						for i in 1:252
 							snr = read(snr_file, "/electrode_$(i-1)/SNR")
 
@@ -1407,9 +1410,9 @@ function LRS_alt_distribution(t, r)
 end
 
 # nAUC distribution
-function nAUC_distribution(t, r)
+function nAUC_distribution(e_f_list, t, r)
 	for (segment, lim) in zip(["all", "15", "30", "45"], ["1-45", "1-15", "16-30", "31-45"])
-		for e_f in ["none", "snr_3", "snr_7"]
+		for e_f in e_f_list
 			# nAUC distribution
 			local grouped_nauc = Dict()
 			local grouped_nauc_m = Dict()
@@ -1421,7 +1424,7 @@ function nAUC_distribution(t, r)
 			end
 			for group in groups
 				for dataset in grouped_datasets[group]
-					entropy_file = h5open("./entropy_data/$(dataset)_chirp_entropy.h5", "r")
+					entropy_file = h5open("./entropy_data/$(dataset)"*stim_suffix*"_entropy.h5", "r")
 					entropy_data = read(entropy_file, "/$(t)/$(r)")
 
 					if !haskey(entropy_data["electrode_mean"], e_f)
@@ -1467,9 +1470,9 @@ function nAUC_distribution(t, r)
 end
 
 # nAUC alt distribution
-function nAUC_alt_distribution(t, r)
+function nAUC_alt_distribution(e_f_list, t, r)
 	for (segment, lim) in zip(["all", "15", "30", "45"], ["1-45", "1-15", "16-30", "31-45"])
-		for e_f in ["none", "snr_3", "snr_7"]
+		for e_f in e_f_list
 			# nAUC distribution
 			local grouped_nauc = Dict()
 			local grouped_nauc_m = Dict()
@@ -1481,9 +1484,9 @@ function nAUC_alt_distribution(t, r)
 			end
 			for group in groups
 				for dataset in grouped_datasets[group]
-					entropy_file = h5open("./entropy_data/$(dataset)_chirp_entropy.h5", "r")
+					entropy_file = h5open("./entropy_data/$(dataset)"*stim_suffix*"_entropy.h5", "r")
 
-					if e_f != "none" && !isfile("../SNR/$(dataset)_SNR.h5")
+					if e_f != "none" && !isfile(data_folder*"/$(dataset)_SNR.h5")
 						println("SNR file not found for dataset: ", dataset)
 						continue
 					end
@@ -1507,7 +1510,7 @@ function nAUC_alt_distribution(t, r)
 							count += 1
 						end
 					else
-						snr_file = h5open("../SNR/$(dataset)_SNR.h5", "r")
+						snr_file = h5open(data_folder*"/$(dataset)_SNR.h5", "r")
 						for i in 1:252
 							snr = read(snr_file, "/electrode_$(i-1)/SNR")
 
@@ -1572,9 +1575,9 @@ function nAUC_alt_distribution(t, r)
 end
 
 # STD LRS
-function STD_LRS_distribution(t, r)
+function STD_LRS_distribution(e_f_list, t, r)
 	for (segment, lim) in zip(["all", "15", "30", "45"], ["1-45", "1-15", "16-30", "31-45"])
-		for e_f in ["none", "snr_3", "snr_7"]
+		for e_f in e_f_list
 			# LRS distribution
 			local grouped_lrs = Dict()
 			for group in groups
@@ -1582,9 +1585,9 @@ function STD_LRS_distribution(t, r)
 			end
 			for group in groups
 				for dataset in grouped_datasets[group]
-					entropy_file = h5open("./entropy_data/$(dataset)_chirp_entropy.h5", "r")
+					entropy_file = h5open("./entropy_data/$(dataset)"*stim_suffix*"_entropy.h5", "r")
 
-					if e_f != "none" && !isfile("../SNR/$(dataset)_SNR.h5")
+					if e_f != "none" && !isfile(data_folder*"/$(dataset)_SNR.h5")
 						println("SNR file not found for dataset: ", dataset)
 						continue
 					end
@@ -1606,7 +1609,7 @@ function STD_LRS_distribution(t, r)
 							end
 						end
 					else
-						snr_file = h5open("../SNR/$(dataset)_SNR.h5", "r")
+						snr_file = h5open(data_folder*"/$(dataset)_SNR.h5", "r")
 						for i in 1:252
 							snr = read(snr_file, "/electrode_$(i-1)/SNR")
 
@@ -1662,9 +1665,9 @@ function STD_LRS_distribution(t, r)
 end
 
 # STD nAUC
-function STD_nAUC_distribution(t, r)
+function STD_nAUC_distribution(e_f_list, t, r)
 	for (segment, lim) in zip(["all", "15", "30", "45"], ["1-45", "1-15", "16-30", "31-45"])
-		for e_f in ["none", "snr_3", "snr_7"]
+		for e_f in e_f_list
 			# LRS distribution
 			local grouped_lrs = Dict()
 			for group in groups
@@ -1672,9 +1675,9 @@ function STD_nAUC_distribution(t, r)
 			end
 			for group in groups
 				for dataset in grouped_datasets[group]
-					entropy_file = h5open("./entropy_data/$(dataset)_chirp_entropy.h5", "r")
+					entropy_file = h5open("./entropy_data/$(dataset)"*stim_suffix*"_entropy.h5", "r")
 
-					if e_f != "none" && !isfile("../SNR/$(dataset)_SNR.h5")
+					if e_f != "none" && !isfile(data_folder*"/$(dataset)_SNR.h5")
 						println("SNR file not found for dataset: ", dataset)
 						continue
 					end
@@ -1696,7 +1699,7 @@ function STD_nAUC_distribution(t, r)
 							end
 						end
 					else
-						snr_file = h5open("../SNR/$(dataset)_SNR.h5", "r")
+						snr_file = h5open(data_folder*"/$(dataset)_SNR.h5", "r")
 						for i in 1:252
 							snr = read(snr_file, "/electrode_$(i-1)/SNR")
 
@@ -1799,28 +1802,31 @@ for dataset in datasets
 	#entropy
 	for t in t_list
 		for r in r_list
-			SNR_comparison(dataset, t, r)
+			SNR_comparison(dataset, e_f_list, t, r)
 			LRS_map(dataset, t, r)
 			nAUC_map(dataset, t, r)
 		end
 	end
 end
 
-for group in groups
-	group_entropy_curves(group)
+for t in t_list
+	for r in r_list
+		for group in groups
+			group_entropy_curves(group, e_f_list, t, r)
+		end
+
+		mean_entropy_curves_comparison(e_f_list, t, r)
+	end
 end
-
-mean_entropy_curves_comparison()
-
 # LRS and nAUC distribution
 for t in t_list
 	for r in r_list
-		LRS_distribution(t, r)
-		LRS_alt_distribution(t, r)
-		nAUC_distribution(t, r)
-		nAUC_alt_distribution(t, r)
-#		STD_LRS_distribution(t, r)
-#		STD_nAUC_distribution(t, r)
+		LRS_distribution(e_f_list, t, r)
+		LRS_alt_distribution(e_f_list, t, r)
+		nAUC_distribution(e_f_list, t, r)
+		nAUC_alt_distribution(e_f_list, t, r)
+		STD_LRS_distribution(e_f_list, t, r)
+		STD_nAUC_distribution(e_f_list, t, r)
 	end
 end
 
