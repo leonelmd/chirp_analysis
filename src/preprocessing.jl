@@ -174,3 +174,85 @@ function filter_and_resample_photodiode(dataset, filter, resampling_rate)
 		println("Done.")
 	end
 end
+
+function compute_and_save_snr(dataset, resampling_rate)
+    sec = 1 #seconds of noise to consider in SNR calculation
+    h5open(data_folder * "/" * dataset * "_SNR.h5", "cw") do SNR
+		# check if average_signal group exists
+		if group_check(SNR, ["electrode_0", "SNR"])
+			println("Skipping SNR calculation for dataset: "* dataset)
+			return
+		end
+
+		# open raw file
+		file = h5open(data_folder * "/" * dataset * stim_suffix * ".h5", "r")
+		stream = read(file, "Data/Recording_0/AnalogStream/Stream_0")
+		close(file)
+
+		# open event list file
+		signal_length = trunc(Int, length(stream["ChannelData"])/N_elec)
+       
+        #read events file
+		csv_file = readlines(data_folder*"/event_list_"*dataset*stim_suffix*".csv")
+        #get the first event to estimate size of matrices
+		event_start = [split(line, ",") for line in csv_file][2][col_start] #first event is row 2
+		event_start = parse(Int, event_start)
+		event_end = [split(line, ",") for line in csv_file][2][col_end]
+		event_end = parse(Int, event_end)
+
+        step = trunc(Int, sampling_rate / resampling_rate) #for resampling
+
+        for i in 1:N_elec
+			println("Processing electrode_"*string(i-1)*"...")
+
+			info = stream["InfoChannel"][i]
+			signal_raw = stream["ChannelData"][signal_length*(i-1)+1:signal_length*i]
+
+			signal = signal_reconstruct(signal_raw, info)
+			signal = [s*1000 for s in signal] # Convert from V to mV
+
+			subsignal = signal[event_start:event_end]
+			noisesignal = signal[event_start - Int(sec*sampling_rate) : event_start]
+            
+			resampled_signal = subsignal[1:step:end]
+			resampled_noise = noisesignal[1:step:end]
+
+			time_signal = length(resampled_signal)/resampling_rate
+			time_noise = length(resampled_noise)/resampling_rate
+
+			mean_signal = zeros(Int(resampling_rate*time_signal))
+            mean_noise = zeros(Int(resampling_rate*time_noise))
+
+			for j in 2:(N_rep + 1) #add 1 to indices-->first column header
+				println("Event "*string(j-1))
+				
+				event_start = [split(line, ",") for line in csv_file][j][col_start]
+				event_start = parse(Int, event_start)
+				event_end = [split(line, ",") for line in csv_file][j][col_end]
+				event_end = parse(Int, event_end)
+
+				println("Event times: "*string(event_start)*" and "*string(event_end))
+
+				subsignal = signal[event_start:event_end]
+				noisesignal = signal[event_start - Int(sec*sampling_rate) : event_start]
+				resampled_signal = subsignal[1:step:end]
+                resampled_noise = noisesignal[1:step:end]
+
+                mean_signal += resampled_signal
+                mean_noise += resampled_noise
+            end
+            mean_signal = mean_signal ./ N_rep
+            mean_noise = mean_noise ./ N_rep
+            
+            power_signal = mean(mean_signal.^2)
+            power_noise = mean(mean_noise.^2)
+            snr = 10* log10(power_signal/power_noise)
+            println("Electrode " *string(i-1)* " SNR")
+            println(snr)
+            SNR["electrode_"*string(i-1)*"/SNR"] = snr
+		end
+		
+		println("Done.")
+	end
+end
+
