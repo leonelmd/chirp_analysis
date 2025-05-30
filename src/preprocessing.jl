@@ -240,6 +240,7 @@ function compute_and_save_snr(dataset, resampling_rate)
 				resampled_signal = subsignal[1:step:end]
 				resampled_signal = resampled_signal[1:resampling_rate*time_signal]
                 resampled_noise = noisesignal[1:step:end]
+                resampled_noise = resampled_noise[1:resampling_rate*time_noise]
 
                 mean_signal += resampled_signal
                 mean_noise += resampled_noise
