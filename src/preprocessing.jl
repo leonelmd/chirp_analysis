@@ -217,8 +217,10 @@ function compute_and_save_snr(dataset, resampling_rate)
 			resampled_signal = subsignal[1:step:end]
 			resampled_noise = noisesignal[1:step:end]
 
-			time_signal = length(resampled_signal)/resampling_rate
-			time_noise = length(resampled_noise)/resampling_rate
+			#time_signal = length(resampled_signal)/resampling_rate
+			#time_noise = length(resampled_noise)/resampling_rate
+			time_signal = 35 #duration of chirp. Hard coded!!
+			time_noise = sec
 
 			mean_signal = zeros(Int(resampling_rate*time_signal))
             mean_noise = zeros(Int(resampling_rate*time_noise))
@@ -235,7 +237,7 @@ function compute_and_save_snr(dataset, resampling_rate)
 
 				subsignal = signal[event_start:event_end]
 				noisesignal = signal[event_start - Int(sec*sampling_rate) : event_start]
-				resampled_signal = subsignal[1:step:end]
+				resampled_signal = subsignal[1:step:resampling_rate*time_signal]
                 resampled_noise = noisesignal[1:step:end]
 
                 mean_signal += resampled_signal
