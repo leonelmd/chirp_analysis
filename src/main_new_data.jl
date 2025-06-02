@@ -30,7 +30,7 @@ e_f_list = [
 
 # divide the datasets into N chunks
 N = 88
-i = parse(Int, ARGS[1])
+start_dataset = parse(Int, ARGS[1])
 
 datasets = [
 	# WT 3m female
@@ -98,64 +98,53 @@ datasets = [
 	"MR-0711-t2"
 ]
 
-for electrode_filter in e_f_list
+# split according to N cores
+f_datasets = datasets[start_dataset:N:end]
 
-	println("Processing datasets with electrode filter: ", electrode_filter)
-
-	f_datasets = datasets
-
-	if electrode_filter != "none"
-		f_datasets = []
-		for dataset in datasets
-			#check if snr file exists
+for dataset in f_datasets
+	for electrode_filter in e_f_list
+		threshold = parse(Float64, electrode_filter[5:end])
+		if electrode_filter != "none"
+			skipped = true
 			if !isfile(data_folder*"/"*dataset*"_SNR.h5")
 				println("SNR file not found for dataset: ", dataset)
 				compute_and_save_snr(dataset, resampling_rate)
 			end
 			snr_file = h5open(data_folder*"/"*dataset*"_SNR.h5", "r")
-			threshold = parse(Float64, electrode_filter[5:end])
-			at_least_one = false
 			for i in 1:252
 				if read(snr_file, "electrode_"*string(i-1)*"/SNR") >= threshold
-					push!(f_datasets, dataset)
+					skipped = false
 					break
 				end
-			end
+			end			
+		else
+			skipped = false
 		end
-	else 
-		f_datasets = datasets
-	end
-	
-	println("Dataset length: ", length(f_datasets))
+		if skipped
+			println("Dataset: "*dataset*" with no SNR above: ", electrode_filter)
+			continue
+		end
 
-	# split according to N cores
-	f_datasets = f_datasets[i:N:end]
-
+		println("Processing dataset: "*dataset*" with electrode filter: ", electrode_filter)
 	
-	## PREPROCESSING
-	for dataset in f_datasets
+		## PREPROCESSING
 		println("Preprocessing dataset: ", dataset)
 		filter_and_resample(dataset, filter, resampling_rate)
-	end
-	
+		
 
-	## PROCESSING
-	for dataset in f_datasets
+		## PROCESSING
 		println("Processing dataset: ", dataset)
 		get_segments(dataset, 35)
 		normalize_signals(dataset)
 		get_event_mean(dataset, 35)
 		get_electrode_mean(dataset, 35, electrode_filter)
-	end
 
-	## ENTROPY
-	for dataset in f_datasets
+		## ENTROPY
 		println("Computing entropy and complexity for dataset: ", dataset)
 		for r in r_list
 			compute_entropy_curve(dataset, electrode_filter, "FRCMSE", 2, r, [i for i in 1:45])
 		end
-	end
 
 end
 
-println("Processing complete.")
+println("Main complete.")
