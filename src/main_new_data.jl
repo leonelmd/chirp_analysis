@@ -144,7 +144,7 @@ for dataset in f_datasets
 		for r in r_list
 			compute_entropy_curve(dataset, electrode_filter, "FRCMSE", 2, r, [i for i in 1:45])
 		end
-
+	end
 end
 
 println("Main complete.")
