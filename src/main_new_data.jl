@@ -103,9 +103,9 @@ f_datasets = datasets[start_dataset:N:end]
 
 for dataset in f_datasets
 	for electrode_filter in e_f_list
-		threshold = parse(Float64, electrode_filter[5:end])
 		if electrode_filter != "none"
 			skipped = true
+			threshold = parse(Float64, electrode_filter[5:end])
 			if !isfile(data_folder*"/"*dataset*"_SNR.h5")
 				println("SNR file not found for dataset: ", dataset)
 				compute_and_save_snr(dataset, resampling_rate)
