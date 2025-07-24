@@ -1,3 +1,3 @@
 - Code to calculate entropy and complexity of uERG signals as described in Medina et al (2025) "XBP1s as a Therapeutic Target to Preserve Retinal Function During Aging and Neurodegeneration" (https://www.biorxiv.org/content/10.1101/2025.07.03.662890v1 )
 - Excel file dataset_FRCMSE_chirp.xlsx shows the results of the calculations for all subjects
-- GrpahPad file Statistical_Anlysis.prism summarizes data and shows the statistical analyses performed for complexity values
+- GraphPad file Statistical_Anlysis.prism summarizes data and shows the statistical analyses performed for complexity values
