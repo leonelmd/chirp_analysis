@@ -592,15 +592,12 @@ grouped_datasets["D"] = [
 	"MR-0293",
 	"MR-0292-t2",
 	"MR-0292-t1",
-	"MR-0280-t2",
-	"MR-0280-t1",
 	"MR-0278",
 	"MR-0275",
 	# 5xFAD 6m female
 	"MR-0291",
 	"MR-0290",
 	"MR-0287",
-	"MR-0285-t2",
 	"MR-0285-t1",
 	"MR-0274",
 ]
@@ -706,17 +703,13 @@ v_ls_index["F"] = :dash
 v_ls_index["G"] = :solid
 v_ls_index["H"] = :dash
 
+# Type of multiscale entropy
 t_list = ["FRCMSE"]
+# Dimension for entropy calculation. Typical default value r = 0.2
 r_list = ["0.2"]
+# SNR threshold
 e_f_list = [
 	"none",
-	# "snr_0",
-	# "snr_1",
-	# "snr_2",
-	# "snr_3",
-	# "snr_4",
-	# "snr_5",
-	# "snr_6",
 	"snr_7"
 ]
 
@@ -1796,8 +1789,8 @@ for group in groups
 end
 
 for dataset in datasets
-	# signal_and_spectrogram_electrode_mean(dataset)
-	# SNR_map(dataset)
+	signal_and_spectrogram_electrode_mean(dataset)
+	SNR_map(dataset)
 
 	#entropy
 	for t in t_list
