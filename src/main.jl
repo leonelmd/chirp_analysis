@@ -9,22 +9,20 @@ include("processing.jl")
 # parameters
 filter = Dict(
 	"type" => "BPF",
-	"cutoff_low" => 0.1, # Hz
-	"cutoff_high" => 40 # Hz
+	"cutoff_low" => 10, # Hz
+	"cutoff_high" => 100 # Hz
 )
 resampling_rate = 250 # Hz
+N_channels = 252
+max_scale = 45 # For multiscale entropys
 
+# list of dimension value for entropy calculation. Default typical value r=0.2
 r_list = [0.2]
+
+# list of SNR thresholds for channel selection 
 e_f_list = [
 	"none",
-	#"snr_0",
-	#"snr_1",
-	#"snr_2",
-	#"snr_3",
-	#"snr_4",
-	#"snr_5",
-	#"snr_6",
-	#"snr_7"
+	"snr_7"
 ]
 
 # divide the datasets into N chunks
@@ -112,8 +110,6 @@ datasets = [
 	"MR-0293",
 	"MR-0292-t2",
 	"MR-0292-t1",
-	"MR-0280-t2",
-	"MR-0280-t1",
 	"MR-0278",
 	"MR-0275",
 	# 5xFAD 6m female
@@ -121,7 +117,6 @@ datasets = [
 	"MR-0290",
 	"MR-0287",
 	"MR-0285-t2",
-	"MR-0285-t1",
 	"MR-0274",
 	# 5xFAD 3m male
 	"MR-0310",
@@ -139,11 +134,8 @@ datasets = [
 ]
 
 for electrode_filter in e_f_list
-
 	println("Processing datasets with electrode filter: ", electrode_filter)
-
 	f_datasets = datasets
-
 	if electrode_filter != "none"
 		f_datasets = []
 		for dataset in datasets
@@ -155,7 +147,7 @@ for electrode_filter in e_f_list
 			snr_file = h5open("../SNR/"*dataset*"_SNR.h5", "r")
 			threshold = parse(Float64, electrode_filter[5:end])
 			at_least_one = false
-			for i in 1:252
+			for i in 1:N_channels
 				if read(snr_file, "electrode_"*string(i-1)*"/SNR") >= threshold
 					push!(f_datasets, dataset)
 					break
@@ -171,16 +163,13 @@ for electrode_filter in e_f_list
 	# split according to N cores
 	f_datasets = f_datasets[i:N:end]
 
-	#=
 	## PREPROCESSING
 	for dataset in f_datasets
 		println("Preprocessing dataset: ", dataset)
 		filter_and_resample(dataset, filter, resampling_rate)
 	end
-	=#
 
 	## PROCESSING
-	#=
 	for dataset in f_datasets
 		println("Processing dataset: ", dataset)
 		get_segments(dataset, 35)
@@ -188,16 +177,14 @@ for electrode_filter in e_f_list
 		get_event_mean(dataset, 35)
 		get_electrode_mean(dataset, 35, electrode_filter)
 	end
-	=#
 
 	## ENTROPY
 	for dataset in f_datasets
 		println("Computing entropy and complexity for dataset: ", dataset)
 		for r in r_list
-			compute_entropy_curve(dataset, electrode_filter, "RCMSE", 2, r, [i for i in 1:45])
+			compute_entropy_curve(dataset, electrode_filter, "RCMSE", 2, r, [i for i in 1:max_scale])
 		end
 	end
-
 end
 
 println("Processing complete.")
